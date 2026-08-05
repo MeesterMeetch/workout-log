@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: workout-log
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: SESSION_SECRET
+        generateValue: true
+      # Set this yourself in the Render dashboard.
+      # Format: mitch:yourpassword:Mitch,chelsea:herpassword:Chelsea
+      - key: APP_USERS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: workout-log-db
+          property: connectionString
+
+databases:
+  # Heads up: a free Render Postgres database expires 30 days after creation.
+  # To keep history for good, either upgrade this to a paid instance type or
+  # delete this block and point DATABASE_URL at a Neon database instead.
+  - name: workout-log-db
+    plan: free
