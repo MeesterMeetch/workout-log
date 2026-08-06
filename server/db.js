@@ -47,6 +47,10 @@ export async function migrate() {
   `);
 
   await pool.query(`
+    ALTER TABLE entries ADD COLUMN IF NOT EXISTS rep_list INTEGER[];
+  `);
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS entries_user_exercise_date_idx
       ON entries (user_id, exercise_id, log_date DESC);
   `);

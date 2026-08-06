@@ -15,6 +15,19 @@ function prettyDate(key) {
   });
 }
 
+function repsOf(entry) {
+  if (Array.isArray(entry.rep_list) && entry.rep_list.length) return entry.rep_list;
+  return Array.from({ length: entry.sets }, () => entry.reps);
+}
+
+function repsText(entry) {
+  return repsOf(entry).join(" / ");
+}
+
+function volume(entry) {
+  return repsOf(entry).reduce((a, b) => a + b, 0) * entry.weight;
+}
+
 async function api(path, options = {}) {
   const res = await fetch(`/api${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -247,24 +260,28 @@ function ExerciseCard({ exercise, date, history, onSave }) {
   const previous = history.find((e) => e.log_date < date) || null;
 
   const [weight, setWeight] = useState("");
-  const [sets, setSets] = useState("3");
-  const [reps, setReps] = useState("12");
+  const [reps, setReps] = useState(["12", "12", "12"]);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
+    const source = todayEntry || previous;
     setEditing(false);
-    setWeight(todayEntry ? String(todayEntry.weight) : previous ? String(previous.weight) : "");
-    setSets(todayEntry ? String(todayEntry.sets) : previous ? String(previous.sets) : "3");
-    setReps(todayEntry ? String(todayEntry.reps) : previous ? String(previous.reps) : "12");
+    setWeight(source ? String(source.weight) : "");
+    setReps(source ? repsOf(source).map(String) : ["12", "12", "12"]);
   }, [exercise.id, date, todayEntry?.id, previous?.id]);
 
-  const delta = todayEntry && previous ? todayEntry.weight - previous.weight : null;
+  const volumeDelta =
+    todayEntry && previous ? volume(todayEntry) - volume(previous) : null;
+
+  function setRep(i, value) {
+    setReps((prev) => prev.map((r, idx) => (idx === i ? value : r)));
+  }
 
   async function submit() {
     setBusy(true);
     try {
-      await onSave({ weight, sets, reps });
+      await onSave({ weight, repList: reps.map((r) => Number(r) || 0) });
       setEditing(false);
     } finally {
       setBusy(false);
@@ -282,7 +299,7 @@ function ExerciseCard({ exercise, date, history, onSave }) {
 
       <p className="ghost-line">
         {previous
-          ? `Last time ${prettyDate(previous.log_date)}: ${previous.weight} lb, ${previous.sets} x ${previous.reps}`
+          ? `Last time ${prettyDate(previous.log_date)}: ${previous.weight} lb, ${repsText(previous)}`
           : "No history yet. This one sets the baseline."}
       </p>
 
@@ -298,24 +315,39 @@ function ExerciseCard({ exercise, date, history, onSave }) {
               placeholder="lb"
             />
           </label>
-          <label className="num">
-            <span>Sets</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={sets}
-              onChange={(e) => setSets(e.target.value)}
-            />
-          </label>
-          <label className="num">
-            <span>Reps</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={reps}
-              onChange={(e) => setReps(e.target.value)}
-            />
-          </label>
+
+          <div className="sets">
+            {reps.map((r, i) => (
+              <label className="num" key={i}>
+                <span>Set {i + 1}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={r}
+                  onChange={(e) => setRep(i, e.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+
+          <div className="set-actions">
+            <button
+              className="ghost small"
+              onClick={() => setReps((prev) => [...prev, prev[prev.length - 1] || "12"])}
+              disabled={reps.length >= 10}
+            >
+              Add set
+            </button>
+            {reps.length > 1 && (
+              <button
+                className="ghost small"
+                onClick={() => setReps((prev) => prev.slice(0, -1))}
+              >
+                Remove set
+              </button>
+            )}
+          </div>
+
           <button className="primary" onClick={submit} disabled={busy}>
             {busy ? "Saving" : todayEntry ? "Update" : "Log it"}
           </button>
@@ -323,11 +355,11 @@ function ExerciseCard({ exercise, date, history, onSave }) {
       ) : (
         <div className="logged">
           <p className="logged-line">
-            {todayEntry.weight} lb, {todayEntry.sets} x {todayEntry.reps}
+            {todayEntry.weight} lb, {repsText(todayEntry)}
           </p>
-          {delta !== null && delta !== 0 && (
-            <span className={delta > 0 ? "delta up" : "delta down"}>
-              {delta > 0 ? "up" : "down"} {Math.abs(delta)} lb
+          {volumeDelta !== null && volumeDelta !== 0 && (
+            <span className={volumeDelta > 0 ? "delta up" : "delta down"}>
+              volume {volumeDelta > 0 ? "up" : "down"} {Math.abs(volumeDelta)} lb
             </span>
           )}
           <button className="ghost" onClick={() => setEditing(true)}>
@@ -362,7 +394,7 @@ function History({ entries, onDelete }) {
             <div key={e.id} className="history-row">
               <span className="history-name">{e.exercise_name}</span>
               <span className="history-nums">
-                {e.weight} lb, {e.sets} x {e.reps}
+                {e.weight} lb, {repsText(e)}
               </span>
               <button className="ghost small" onClick={() => onDelete(e.id)}>
                 Remove

@@ -247,8 +247,19 @@ input {
 }
 
 .entry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sets {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+}
+
+.set-actions {
+  display: flex;
   gap: 8px;
 }
 
@@ -294,7 +305,6 @@ input {
 }
 
 .primary {
-  grid-column: 1 / -1;
   background: var(--violet-deep);
   border: none;
   border-radius: 8px;

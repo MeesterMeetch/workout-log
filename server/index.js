@@ -48,7 +48,7 @@ app.get("/api/me", requireUser, (req, res) => {
 app.get("/api/entries", requireUser, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, to_char(log_date, 'YYYY-MM-DD') AS log_date, week, day_id,
-            exercise_id, exercise_name, weight::float AS weight, sets, reps, note
+            exercise_id, exercise_name, weight::float AS weight, sets, reps, rep_list, note
        FROM entries
       WHERE user_id = $1
       ORDER BY log_date DESC, id DESC
@@ -62,8 +62,10 @@ app.post("/api/entries", requireUser, async (req, res) => {
   const b = req.body || {};
   const logDate = String(b.logDate || "").slice(0, 10);
   const weight = Number(b.weight);
-  const sets = Number(b.sets);
-  const reps = Number(b.reps);
+
+  const repList = Array.isArray(b.repList)
+    ? b.repList.map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 500)
+    : [];
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(logDate)) {
     return res.status(400).json({ error: "Pick a valid date." });
@@ -71,22 +73,29 @@ app.post("/api/entries", requireUser, async (req, res) => {
   if (!b.exerciseId || !b.exerciseName) {
     return res.status(400).json({ error: "Missing exercise." });
   }
-  if (![weight, sets, reps].every((n) => Number.isFinite(n) && n >= 0)) {
-    return res.status(400).json({ error: "Weight, sets and reps all need numbers." });
+  if (!Number.isFinite(weight) || weight < 0) {
+    return res.status(400).json({ error: "Weight needs a number." });
+  }
+  if (repList.length < 1 || repList.length > 10) {
+    return res.status(400).json({ error: "Log between one and ten sets." });
   }
 
+  const sets = repList.length;
+  const topReps = Math.max(...repList);
+
   const { rows } = await pool.query(
-    `INSERT INTO entries (user_id, log_date, week, day_id, exercise_id, exercise_name, weight, sets, reps, note)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `INSERT INTO entries (user_id, log_date, week, day_id, exercise_id, exercise_name, weight, sets, reps, rep_list, note)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      ON CONFLICT (user_id, exercise_id, log_date)
      DO UPDATE SET weight = EXCLUDED.weight,
                    sets = EXCLUDED.sets,
                    reps = EXCLUDED.reps,
+                   rep_list = EXCLUDED.rep_list,
                    week = EXCLUDED.week,
                    day_id = EXCLUDED.day_id,
                    note = EXCLUDED.note
      RETURNING id, to_char(log_date, 'YYYY-MM-DD') AS log_date, week, day_id,
-               exercise_id, exercise_name, weight::float AS weight, sets, reps, note`,
+               exercise_id, exercise_name, weight::float AS weight, sets, reps, rep_list, note`,
     [
       req.user.id,
       logDate,
@@ -96,7 +105,8 @@ app.post("/api/entries", requireUser, async (req, res) => {
       String(b.exerciseName),
       weight,
       sets,
-      reps,
+      topReps,
+      repList,
       b.note ? String(b.note).slice(0, 280) : null,
     ]
   );
