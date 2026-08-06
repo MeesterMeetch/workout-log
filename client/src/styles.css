@@ -1,12 +1,15 @@
 :root {
-  --ink: #14171a;
-  --slab: #1d2228;
-  --edge: #2b3138;
+  --ink: #15121d;
+  --slab: #1e1a29;
+  --edge: #2f2740;
   --chalk: #f2efe9;
-  --muted: #868e98;
+  --muted: #8b849c;
+  --violet: #a78bfa;
+  --violet-deep: #7c5cff;
+  --violet-wash: rgba(167, 139, 250, 0.14);
   --legs: #3e8c63;
   --push: #d3453f;
-  --pull: #3a6fb0;
+  --pull: #5b8def;
   --display: "Archivo", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -70,6 +73,8 @@ input {
 }
 
 .wordmark {
+  border-left: 3px solid var(--violet);
+  padding-left: 10px;
   font-family: var(--display);
   font-weight: 800;
   font-size: 30px;
@@ -104,7 +109,7 @@ input {
 
 .tab.on {
   color: var(--chalk);
-  border-bottom-color: var(--chalk);
+  border-bottom-color: var(--violet);
 }
 
 .controls {
@@ -134,8 +139,8 @@ input {
 }
 
 .switch-btn.on {
-  background: var(--edge);
-  color: var(--chalk);
+  background: var(--violet-wash);
+  color: var(--violet);
 }
 
 .date {
@@ -177,7 +182,8 @@ input {
 }
 
 .day.on {
-  background: var(--edge);
+  background: var(--violet-wash);
+  border-color: var(--violet);
   color: var(--chalk);
 }
 
@@ -227,8 +233,8 @@ input {
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink);
-  background: var(--chalk);
+  color: #1b1230;
+  background: var(--violet);
   border-radius: 4px;
   padding: 3px 6px;
 }
@@ -264,6 +270,7 @@ input {
 .field input {
   background: var(--ink);
   border: 1px solid var(--edge);
+  caret-color: var(--violet);
   border-radius: 8px;
   color: var(--chalk);
   font-size: 17px;
@@ -288,10 +295,10 @@ input {
 
 .primary {
   grid-column: 1 / -1;
-  background: var(--chalk);
+  background: var(--violet-deep);
   border: none;
   border-radius: 8px;
-  color: var(--ink);
+  color: #ffffff;
   font-family: var(--display);
   font-weight: 600;
   font-size: 15px;
@@ -388,7 +395,7 @@ input {
 
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--chalk);
+  outline: 2px solid var(--violet);
   outline-offset: 2px;
 }
 

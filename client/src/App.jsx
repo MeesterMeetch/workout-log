@@ -234,11 +234,6 @@ function Log({ user, onSignOut }) {
               onSave={(values) => save(ex, values)}
             />
           ))}
-
-          <p className="footnote">
-            Two weeks on Week A, two weeks on Week B, then back around. The Arnold press
-            stays put.
-          </p>
         </>
       ) : (
         <History entries={entries} onDelete={remove} />
